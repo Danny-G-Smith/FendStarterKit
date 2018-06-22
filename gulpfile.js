@@ -70,7 +70,7 @@ gulp.src(paths.css)
  *
  * https://www.npmjs.com/package/gulp-cssnano
  */
-gulp.task('cssnano', ['css:concat'], () =>
+gulp.task('cssnano', gulp.parallel('css:concat'), () =>
 gulp.src(destFolder + 'style.css')
    .pipe(plumber({'errorHandler': handleErrors}))
    .pipe(cssnano({
@@ -113,7 +113,7 @@ gulp.src(paths.scripts)
  *
  * https://www.npmjs.com/package/gulp-uglify
  */
-gulp.task('uglify', ['concat'], () =>
+gulp.task('uglify', gulp.parallel('concat'), () =>
 gulp.src(destFolder + 'app.js')
    .pipe(plumber({'errorHandler': handleErrors}))
    .pipe(rename({'suffix': '.min'}))
@@ -168,9 +168,9 @@ gulp.task('watch', function () {
    });
 
    // Run tasks when files change.
-   gulp.watch(paths.css, ['styles']);
+   gulp.watch(paths.css, gulp.parallel('styles'));
    gulp.watch(htmlWatch, reload);
-   gulp.watch(paths.scripts, ['scripts']);
+   gulp.watch(paths.scripts, gulp.parallel('scripts'));
 });
 
 gulp.task('reload', function () {
@@ -180,7 +180,7 @@ gulp.task('reload', function () {
 /**
  * Create individual tasks.
  */
-gulp.task('scripts', ['uglify']);
-gulp.task('styles',  ['cssnano']);
-gulp.task('lint',    ['js:lint']);
-gulp.task('default', ['styles', 'scripts', 'watch', 'reload']);
+gulp.task('scripts', gulp.parallel('uglify'));
+gulp.task('styles',  gulp.parallel('cssnano'));
+gulp.task('lint',    gulp.parallel('js:lint'));
+gulp.task('default', gulp.parallel('styles', 'scripts', 'watch', 'reload'));
