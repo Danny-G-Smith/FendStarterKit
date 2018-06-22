@@ -18,10 +18,9 @@ const paths = {
    'scripts': [
       'app/js/*.js',
       'app/js/**/*.js'
-   ]
+   ],
+   'html': ['app/**/*.html', 'app/*.html']
 };
-
-const htmlWatch = 'app/*.html';
 
 const destFolder = 'dist/';
 
@@ -49,37 +48,37 @@ function handleErrors() {
  * https://www.npmjs.com/package/gulp-concat
  * https://github.com/babel/gulp-babel
  */
-gulp.task('css:concat', () =>
-gulp.src(paths.css)
+gulp.task('css:concat', function() {
+   gulp.src(paths.css)
 
-// Deal with errors.
-   .pipe(plumber(
-      {'errorHandler': handleErrors}
-   ))
+   // Deal with errors.
+      .pipe(plumber(
+         {'errorHandler': handleErrors}
+      ))
 
-   // Concatenate partials into a single script.
-   .pipe(concat('style.css'))
+      // Concatenate partials into a single script.
+      .pipe(concat('style.css'))
 
-   // Save the file.
-   .pipe(gulp.dest(destFolder))
-   .pipe(browserSync.stream())
-);
+      // Save the file.
+      .pipe(gulp.dest(destFolder))
+      .pipe(browserSync.stream());
+});
 
 /**
  * Minify and optimize style.css.
  *
  * https://www.npmjs.com/package/gulp-cssnano
  */
-gulp.task('cssnano', ['css:concat'], () =>
-gulp.src(destFolder + 'style.css')
-   .pipe(plumber({'errorHandler': handleErrors}))
-   .pipe(cssnano({
-      'safe': true // Use safe optimizations.
-   }))
-   .pipe(rename('style.min.css'))
-   .pipe(gulp.dest(destFolder))
-   .pipe(browserSync.stream())
-);
+gulp.task('cssnano', gulp.parallel('css:concat'), function() {
+   gulp.src(destFolder + 'style.css')
+      .pipe(plumber({'errorHandler': handleErrors}))
+      .pipe(cssnano({
+         'safe': true // Use safe optimizations.
+      }))
+      .pipe(rename('style.min.css'))
+      .pipe(gulp.dest(destFolder))
+      .pipe(browserSync.stream());
+});
 
 /**
  * Concatenate and transform JavaScript.
@@ -87,67 +86,67 @@ gulp.src(destFolder + 'style.css')
  * https://www.npmjs.com/package/gulp-concat
  * https://github.com/babel/gulp-babel
  */
-gulp.task('concat', () =>
-gulp.src(paths.scripts)
+gulp.task('concat', function() {
+   gulp.src(paths.scripts)
 
-// Deal with errors.
-   .pipe(plumber(
-      {'errorHandler': handleErrors}
-   ))
+   // Deal with errors.
+      .pipe(plumber(
+         {'errorHandler': handleErrors}
+      ))
 
-   // Convert ES6+ to ES2015.
-   .pipe(babel({
-      presets: ['ES2015']
-   }))
+      // Convert ES6+ to ES2015.
+      .pipe(babel({
+         presets: ['ES2015']
+      }))
 
-   // Concatenate partials into a single script.
-   .pipe(concat('app.js'))
+      // Concatenate partials into a single script.
+      .pipe(concat('app.js'))
 
-   // Save the file.
-   .pipe(gulp.dest(destFolder))
-   .pipe(browserSync.stream())
-);
+      // Save the file.
+      .pipe(gulp.dest(destFolder))
+      .pipe(browserSync.stream());
+});
 
 /**
  * Minify compiled JavaScript.
  *
  * https://www.npmjs.com/package/gulp-uglify
  */
-gulp.task('uglify', ['concat'], () =>
-gulp.src(destFolder + 'app.js')
-   .pipe(plumber({'errorHandler': handleErrors}))
-   .pipe(rename({'suffix': '.min'}))
+gulp.task('uglify', gulp.parallel('concat'), function() {
+   gulp.src(destFolder + 'app.js')
+      .pipe(plumber({'errorHandler': handleErrors}))
+      .pipe(rename({'suffix': '.min'}))
 
-   // Convert ES6+ to ES2015.
-   .pipe(babel({
-      presets: ['ES2015']
-   }))
-   .pipe(uglify({
-      'mangle': false
-   }))
-   .pipe(gulp.dest(destFolder))
-   .pipe(browserSync.stream())
-);
+      // Convert ES6+ to ES2015.
+      .pipe(babel({
+         presets: ['ES2015']
+      }))
+      .pipe(uglify({
+         'mangle': false
+      }))
+      .pipe(gulp.dest(destFolder))
+      .pipe(browserSync.stream());
+});
 
 /**
  * JavaScript linting.
  *
  * https://www.npmjs.com/package/gulp-eslint
  */
-gulp.task('js:lint', () =>
-gulp.src(['app/js/*.js'])
-   .pipe(eslint())
-   .pipe(eslint.format())
-   .pipe(eslint.failAfterError())
-   .pipe(browserSync.stream())
-);
+gulp.task('js:lint', function() {
+   gulp.src(['app/js/*.js'])
+      .pipe(eslint())
+      .pipe(eslint.format())
+      .pipe(eslint.failAfterError())
+      .pipe(browserSync.stream());
+});
 
 /**
  * Process tasks and reload browsers on file changes.
  *
  * https://www.npmjs.com/package/browser-sync
  */
-gulp.task('browser-sync', function () {
+gulp.task('browser-sync', function() {
    browserSync.init({
       server: {
          baseDir: 'app/',
@@ -155,32 +154,38 @@ gulp.task('browser-sync', function () {
    });
 });
 
+gulp.task('html', function () {
+   gulp.src(paths.html)
 
-gulp.task('watch', function () {
-   browserSync.init({
-      server: {
-         serveStaticOptions: {
-            extensions: ['html']
-         },
-         baseDir: 'app/',
-         index: 'index.html'
-      }
-   });
+   // Deal with errors.
+      .pipe(plumber(
+         {'errorHandler': handleErrors}
+      ))
+
+      // Save the file.
+      .pipe(gulp.dest(destFolder))
+      .pipe(browserSync.stream());
+});
+
+
+gulp.task('watch', function() {
 
    // Run tasks when files change.
-   gulp.watch(paths.css, ['styles']);
-   gulp.watch(htmlWatch, reload);
-   gulp.watch(paths.scripts, ['scripts']);
+   gulp.watch(paths.css,     gulp.parallel('styles'));
+   gulp.watch(paths.scripts, gulp.parallel('scripts'));
+   gulp.watch(paths.html,    gulp.parallel('html'));
+   gulp.watch('lint',         gulp.parallel('js:lint'));
+   gulp.watch('reload',       gulp.parallel('reload'));
 });
 
-gulp.task('reload', function () {
+gulp.task('reload', function() {
    browserSync.reload;
 });
 
 /**
  * Create individual tasks.
  */
-gulp.task('scripts', ['uglify']);
-gulp.task('styles',  ['cssnano']);
-gulp.task('lint',    ['js:lint']);
-gulp.task('default', ['styles', 'scripts', 'watch', 'reload']);
+gulp.task('scripts', gulp.parallel('uglify'));
+gulp.task('styles',  gulp.parallel('cssnano'));
+gulp.task('lint',    gulp.parallel('js:lint'));
+gulp.task('default', gulp.parallel('styles', 'scripts', 'watch', 'reload'));
