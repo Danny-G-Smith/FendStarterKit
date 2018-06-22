@@ -28,11 +28,13 @@
       "gulp-html5-lint": "^1.1.0",
       "gulp-notify": "~3",
       "gulp-plumber": "~1",
+      "gulp-postcss": "^7.0.1",
       "gulp-rename": "~1",
       "gulp-sass": "^4.0.1",
       "gulp-sass-lint": "^1.2.0",
       "gulp-uglify": "~3",
       "gulp-util": "~3",
+      "postcss-sorting": "^3.1.0",
       "sassdoc": "^2.5.0"
    },
    "dependencies": {

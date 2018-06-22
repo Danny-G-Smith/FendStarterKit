@@ -5,21 +5,27 @@ const cssnano     = require('gulp-cssnano');
 const eslint      = require('gulp-eslint');
 const gulp        = require('gulp');
 const gutil       = require('gulp-util');
+//const mqpacker    = require( 'css-mqpacker' );
 const notify      = require('gulp-notify');
 const plumber     = require('gulp-plumber');
 const rename      = require('gulp-rename');
+const sass        = require('gulp-sass' );
+const sassdoc     = require('sassdoc' );
+const sassLint    = require('gulp-sass-lint' );
+const sorting     = require('postcss-sorting');
 const uglify      = require('gulp-uglify');
 const browserSync = require('browser-sync').create();
 const reload      = browserSync.reload;
 
+'use strict';
+
 // Set assets paths.
 const paths = {
    'css': ['app/css/**/*.css', 'app/css/*.css'],
-   'scripts': [
-      'app/js/*.js',
-      'app/js/**/*.js'
-   ],
-   'html': ['app/**/*.html', 'app/*.html']
+   'scripts': ['app/js/*.js', 'app/js/**/*.js'],
+   'html': ['app/**/*.html', 'app/*.html'],
+   'sass': ['app/sass/**/*.scss', 'app/sass/*.scss']
+
 };
 
 const htmlWatch = 'app/*.html';
@@ -43,6 +49,13 @@ function handleErrors() {
    // Prevent the 'watch' task from stopping.
    this.emit('end');
 }
+
+gulp.task('sass', () =>
+   gulp.src('app/sass/**/*.scss')
+      .pipe(sass().on('error', sass.logError))
+      .pipe(gulp.dest(paths.css))
+      .pipe(browserSync.stream())
+);
 
 /**
  * Concatenate and transform JavaScript.
