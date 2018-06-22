@@ -14,11 +14,12 @@ const reload      = browserSync.reload;
 
 // Set assets paths.
 const paths = {
-   'css': ['app/css/*.css'],
+   'css': ['app/css/**/*.css', 'app/css/*.css'],
    'scripts': [
       'app/js/*.js',
       'app/js/**/*.js'
-   ]
+   ],
+   'html': ['app/**/*.html', 'app/*.html']
 };
 
 const htmlWatch = 'app/*.html';
@@ -171,6 +172,8 @@ gulp.task('watch', function () {
    gulp.watch(paths.css, gulp.parallel('styles'));
    gulp.watch(htmlWatch, reload);
    gulp.watch(paths.scripts, gulp.parallel('scripts'));
+   gulp.watch("*.html").on("change", reload);
+
 });
 
 gulp.task('reload', function () {
