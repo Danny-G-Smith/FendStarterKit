@@ -14,14 +14,10 @@ const reload      = browserSync.reload;
 
 // Set assets paths.
 const paths = {
-   'css': ['app/css/style.css', 'app/css/screen.css', 'app/css/modal.css', 'app/css/keyframes.css'],
+   'css': ['app/css/*.css'],
    'scripts': [
-      'app/js/app.js',
-      'app/js/engine.js',
-      'app/js/resources.js',
-      'app/js/views/View.js',
-      'app/js/players/Enemy.js',
-      'app/js/players/Player.js'
+      'app/js/*.js',
+      'app/js/**/*.js'
    ]
 };
 
@@ -53,7 +49,7 @@ function handleErrors() {
  * https://www.npmjs.com/package/gulp-concat
  * https://github.com/babel/gulp-babel
  */
-gulp.task('css:concat', () = >
+gulp.task('css:concat', () =>
 gulp.src(paths.css)
 
 // Deal with errors.
@@ -67,15 +63,14 @@ gulp.src(paths.css)
    // Save the file.
    .pipe(gulp.dest(destFolder))
    .pipe(browserSync.stream())
-)
-;
+);
 
 /**
  * Minify and optimize style.css.
  *
  * https://www.npmjs.com/package/gulp-cssnano
  */
-gulp.task('cssnano', ['css:concat'], () = >
+gulp.task('cssnano', ['css:concat'], () =>
 gulp.src(destFolder + 'style.css')
    .pipe(plumber({'errorHandler': handleErrors}))
    .pipe(cssnano({
@@ -84,8 +79,7 @@ gulp.src(destFolder + 'style.css')
    .pipe(rename('style.min.css'))
    .pipe(gulp.dest(destFolder))
    .pipe(browserSync.stream())
-)
-;
+);
 
 /**
  * Concatenate and transform JavaScript.
@@ -93,7 +87,7 @@ gulp.src(destFolder + 'style.css')
  * https://www.npmjs.com/package/gulp-concat
  * https://github.com/babel/gulp-babel
  */
-gulp.task('concat', () = >
+gulp.task('concat', () =>
 gulp.src(paths.scripts)
 
 // Deal with errors.
@@ -112,15 +106,14 @@ gulp.src(paths.scripts)
    // Save the file.
    .pipe(gulp.dest(destFolder))
    .pipe(browserSync.stream())
-)
-;
+);
 
 /**
  * Minify compiled JavaScript.
  *
  * https://www.npmjs.com/package/gulp-uglify
  */
-gulp.task('uglify', ['concat'], () = >
+gulp.task('uglify', ['concat'], () =>
 gulp.src(destFolder + 'app.js')
    .pipe(plumber({'errorHandler': handleErrors}))
    .pipe(rename({'suffix': '.min'}))
@@ -134,22 +127,20 @@ gulp.src(destFolder + 'app.js')
    }))
    .pipe(gulp.dest(destFolder))
    .pipe(browserSync.stream())
-)
-;
+);
 
 /**
  * JavaScript linting.
  *
  * https://www.npmjs.com/package/gulp-eslint
  */
-gulp.task('js:lint', () = >
+gulp.task('js:lint', () =>
 gulp.src(['app/js/*.js'])
    .pipe(eslint())
    .pipe(eslint.format())
    .pipe(eslint.failAfterError())
    .pipe(browserSync.stream())
-)
-;
+);
 
 /**
  * Process tasks and reload browsers on file changes.
@@ -190,6 +181,6 @@ gulp.task('reload', function () {
  * Create individual tasks.
  */
 gulp.task('scripts', ['uglify']);
-gulp.task('styles', ['cssnano']);
-gulp.task('lint', ['js:lint']);
+gulp.task('styles',  ['cssnano']);
+gulp.task('lint',    ['js:lint']);
 gulp.task('default', ['styles', 'scripts', 'watch', 'reload']);
