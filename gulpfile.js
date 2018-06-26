@@ -1,28 +1,70 @@
 // Require our dependencies
-const babel       = require('gulp-babel');
-const concat      = require('gulp-concat');
-const cssnano     = require('gulp-cssnano');
-const eslint      = require('gulp-eslint');
-const gulp        = require('gulp');
-const gutil       = require('gulp-util');
-const notify      = require('gulp-notify');
-const plumber     = require('gulp-plumber');
-const rename      = require('gulp-rename');
-const uglify      = require('gulp-uglify');
+const autoprefixer = require('autoprefixer');
+const babel = require('gulp-babel');
+const concat = require('gulp-concat');
+const del = require('del');
+const eslint = require('gulp-eslint');
+const gulp = require('gulp');
+const gutil = require('gulp-util');
+const notify = require('gulp-notify');
+const pleeease = require('gulp-pleeease');
+const plumber = require('gulp-plumber');
+const preprocess = require('gulp-preprocess');
+const rename = require('gulp-rename');
+const sass = require('gulp-sass');
+const stripDebug = require('gulp-strip-debug');
+const sourcemaps = require('gulp-sourcemaps');
+const uglify = require('gulp-uglify');
 const browserSync = require('browser-sync').create();
-const reload      = browserSync.reload;
+const reload = browserSync.reload;
+const destFolder = 'dist/';
+const pkg = require('./package.json');
+const devBuild = ((process.env.NODE_ENV || 'development')
+   .trim().toLocaleLowerCase() !== 'production');
 
 // Set assets paths.
 const paths = {
-   'css': ['app/css/*.css'],
-   'scripts': [
-      'app/js/*.js',
-      'app/js/**/*.js'
-   ],
-   'html': ['app/**/*.html', 'app/*.html']
+
+   'css': ['app/css/**/*.css'],
+   'js': ['app/js/**/*.js'],
+   'scss': ['app/scss/**/*.scss'],
+   'tests': ['tests/spec/**/*.js'],
 };
 
-const destFolder = 'dist/';
+const dist = {
+   'css': ['./dist/css/'],
+   'js': ['./dist/js/'],
+};
+
+const html = {
+   in: ['app/**/*.html'],
+   out: ['./dist/'],
+   context: {
+      devBuild: devBuild,
+      author: pkg.author,
+      version: pkg.version,
+   },
+};
+
+const syncOpts = {
+   'open': false,                   // Open project in a new tab?
+   'injectChanges': false,        // Auto inject changes instead of full reload.
+   'proxy': 'FendStarterKit.test', // Use http://_s.dev:3000 to use BrowserSync.
+   'watchOptions': {
+      'debounceDelay': 1000         // Wait 1 second before injecting.
+   },
+};
+
+const pleeeaseOpts = {
+   'in': 'app/scss/style.scss',
+   'out': 'app/css/style.scss',
+   'autoprefixer': {'browsers': ['last 2 versions', '> 2%']},
+   'rem': ['18px'],
+   'pseudoElements': true,
+   'mqpacker': true,
+   'minifier': !devBuild,
+};
+
 
 /**
  * Handle errors and alert the user.
@@ -33,7 +75,7 @@ function handleErrors() {
    notify.onError({
       'title': 'Task Failed [<%= error.message %>',
       'message': 'See console.',
-      'sound': 'Sosumi' // See: https://github.com/mikaelbr/node-notifier#all-notification-options-with-their-defaults
+      'sound': 'Sosumi', // See: https://github.com/mikaelbr/node-notifier#all-notification-options-with-their-defaults
    }).apply(this, args);
 
    gutil.beep(); // Beep 'sosumi' again.
@@ -42,42 +84,46 @@ function handleErrors() {
    this.emit('end');
 }
 
-/**
- * Concatenate and transform JavaScript.
- *
- * https://www.npmjs.com/package/gulp-concat
- * https://github.com/babel/gulp-babel
- */
-gulp.task('css:concat', function() {
-   gulp.src(paths.css)
-
+// build HTML files
+gulp.task('html', function() {
+   return gulp.src(html.in)
    // Deal with errors.
-      .pipe(plumber(
-         {'errorHandler': handleErrors}
-      ))
-
-      // Concatenate partials into a single script.
-      .pipe(concat('style.css'))
-
-      // Save the file.
-      .pipe(gulp.dest(destFolder))
-      .pipe(browserSync.stream());
-});
-
-/**
- * Minify and optimize style.css.
- *
- * https://www.npmjs.com/package/gulp-cssnano
- */
-gulp.task('cssnano', gulp.parallel('css:concat'), function() {
-   gulp.src(destFolder + 'style.css')
       .pipe(plumber({'errorHandler': handleErrors}))
-      .pipe(cssnano({
-         'safe': true // Use safe optimizations.
+      .pipe(preprocess({context: html.context})) // pass object with temp vars
+      .pipe(gulp.dest(html.out));
+});
+
+// compile Sass
+gulp.task('styles', function(done) {
+   del([dist.css + 'style.css', dist.css + 'style.min.css']);
+   gulp.src(paths.scss)
+   // Deal with errors.
+      .pipe(plumber(
+         {'errorHandler': handleErrors}
+      ))
+      .pipe(pleeease())
+      .pipe(rename({
+         extname: '.css',
       }))
-      .pipe(rename('style.min.css'))
-      .pipe(gulp.dest(destFolder))
-      .pipe(browserSync.stream());
+      .pipe(gulp.dest(dist.css))
+      .pipe(rename({
+         suffix: '.min',
+         extname: '.css',
+      }))
+      .pipe(gulp.dest(dist.css))
+      .pipe(browserSync.reload({stream: true}));
+   done();
+});
+
+gulp.task('maps', function(done) {
+   gulp.src(paths.scss, {base: '.'})
+   // Deal with errors.
+      .pipe(plumber({'errorHandler': handleErrors}))
+      .pipe(sourcemaps.init())
+      .pipe(pleeease())
+      .pipe(sourcemaps.write())
+      .pipe(gulp.dest('./dist'));
+   done();
 });
 
 /**
@@ -86,17 +132,16 @@ gulp.task('cssnano', gulp.parallel('css:concat'), function() {
  * https://www.npmjs.com/package/gulp-concat
  * https://github.com/babel/gulp-babel
  */
-gulp.task('concat', function() {
-   gulp.src(paths.scripts)
+
+gulp.task('concat', () =>
+   gulp.src(paths.js)
 
    // Deal with errors.
-      .pipe(plumber(
-         {'errorHandler': handleErrors}
-      ))
+      .pipe(plumber({'errorHandler': handleErrors}))
 
       // Convert ES6+ to ES2015.
       .pipe(babel({
-         presets: ['ES2015']
+         presets: ['ES2015'],
       }))
 
       // Concatenate partials into a single script.
@@ -104,28 +149,40 @@ gulp.task('concat', function() {
 
       // Save the file.
       .pipe(gulp.dest(destFolder))
-      .pipe(browserSync.stream());
-});
+
+);
 
 /**
  * Minify compiled JavaScript.
  *
  * https://www.npmjs.com/package/gulp-uglify
- */
-gulp.task('uglify', gulp.parallel('concat'), function() {
-   gulp.src(destFolder + 'app.js')
-      .pipe(plumber({'errorHandler': handleErrors}))
-      .pipe(rename({'suffix': '.min'}))
 
-      // Convert ES6+ to ES2015.
-      .pipe(babel({
-         presets: ['ES2015']
-      }))
-      .pipe(uglify({
-         'mangle': false
-      }))
-      .pipe(gulp.dest(destFolder))
-      .pipe(browserSync.stream());
+ */ // gulp.series('concat'),
+gulp.task('scripts', function(done) {
+   if (devBuild) {
+      gulp.src(paths.js)
+         .pipe(plumber({'errorHandler': handleErrors}))
+
+         // Convert ES6+ to ES2015.
+         .pipe(babel({
+            presets: ['ES2015'],
+         }))
+         .pipe(gulp.dest(dist.js));
+   } else {
+      gulp.src(paths.js)
+         .pipe(concat('app.js'))
+         .pipe(plumber({'errorHandler': handleErrors}))
+
+         // Convert ES6+ to ES2015.
+         .pipe(babel({
+            presets: ['ES2015'],
+         }))
+         .pipe(stripDebug())
+         .pipe(uglify())
+         .pipe(rename({'suffix': '.min'}))
+         .pipe(gulp.dest(dist.js));
+   }
+   done();
 });
 
 /**
@@ -133,12 +190,17 @@ gulp.task('uglify', gulp.parallel('concat'), function() {
  *
  * https://www.npmjs.com/package/gulp-eslint
  */
-gulp.task('js:lint', function() {
-   gulp.src(['app/js/*.js'])
+gulp.task('js:lint', () =>
+   gulp.src(paths.js)
       .pipe(eslint())
       .pipe(eslint.format())
       .pipe(eslint.failAfterError())
-      .pipe(browserSync.stream());
+);
+
+gulp.task('browser-sync', function() {
+   browserSync.init({
+      proxy: "yourlocal.dev"
+   });
 });
 
 /**
@@ -146,46 +208,34 @@ gulp.task('js:lint', function() {
  *
  * https://www.npmjs.com/package/browser-sync
  */
-gulp.task('browser-sync', function() {
-   browserSync.init({
-      server: {
-         baseDir: 'app/',
-      }
-   });
-});
-
-gulp.task('html', function () {
-   gulp.src(paths.html)
-
-   // Deal with errors.
-      .pipe(plumber(
-         {'errorHandler': handleErrors}
-      ))
-
-      // Save the file.
-      .pipe(gulp.dest(destFolder))
-      .pipe(browserSync.stream());
-});
-
 
 gulp.task('watch', function() {
+   browserSync.init({
+      server: {
+         serveStaticOptions: {
+            extensions: ['html'],
+         },
+         baseDir: 'app/',
+         index: 'index.html',
+      },
+   });
 
    // Run tasks when files change.
-   gulp.watch(paths.css,     gulp.parallel('styles'));
-   gulp.watch(paths.scripts, gulp.parallel('scripts'));
-   gulp.watch(paths.html,    gulp.parallel('html'));
-   gulp.watch('lint',         gulp.parallel('js:lint'));
-   gulp.watch('reload',       gulp.parallel('reload'));
-});
-
-gulp.task('reload', function() {
-   browserSync.reload;
+   gulp.watch(html.in, gulp.series('html', browserSync.reload));
+   gulp.watch(paths.css, gulp.series('styles'));
+   gulp.watch(paths.js, gulp.series('scripts', browserSync.reload));
+   //gulp.watch(paths.js, gulp.series('js:lint'));
 });
 
 /**
  * Create individual tasks.
  */
-gulp.task('scripts', gulp.parallel('uglify'));
-gulp.task('styles',  gulp.parallel('cssnano'));
-gulp.task('lint',    gulp.parallel('js:lint'));
-gulp.task('default', gulp.parallel('styles', 'scripts', 'watch', 'reload'));
+
+gulp.task('browser-sync', gulp.series('browser-sync'));
+gulp.task('html', gulp.series('html'));
+gulp.task('scripts', gulp.series('scripts'));
+gulp.task('styles', gulp.series('styles'));
+gulp.task('maps', gulp.series('maps'));
+gulp.task('lint', gulp.series('js:lint'));
+//gulp.task('default', gulp.series('html', 'styles', 'scripts'));
+
