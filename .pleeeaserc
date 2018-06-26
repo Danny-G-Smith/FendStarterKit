@@ -1,0 +1,7 @@
+{
+   "in":  "app/scss/style.scss",
+   "out": "app/css/style.css",
+   "rem": true,
+   "opacity": false,
+   "pseudoElements": false
+}
