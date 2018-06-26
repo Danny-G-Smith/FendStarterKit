@@ -206,9 +206,19 @@ gulp.task('browser-sync', function() {
  * https://www.npmjs.com/package/browser-sync
  */
 gulp.task('watch', function() {
+   browserSync.init({
+      server: {
+         serveStaticOptions: {
+            extensions: ['html'],
+         },
+         baseDir: 'app/',
+         index: 'index.html',
+      },
+   });
+
    // Run tasks when files change.
-   // gulp.watch(html.in, gulp.series('html', browserSync.reload));
-   // gulp.watch(paths.css, gulp.series('styles'));
+   gulp.watch(html.in, gulp.series('html', browserSync.reload));
+   gulp.watch(paths.css, gulp.series('styles'));
    gulp.watch(paths.js, gulp.series('scripts', browserSync.reload));
    //gulp.watch(paths.js, gulp.series('js:lint'));
 });
