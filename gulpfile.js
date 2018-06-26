@@ -17,6 +17,7 @@ const sourcemaps = require('gulp-sourcemaps');
 const uglify = require('gulp-uglify');
 const browserSync = require('browser-sync').create();
 const reload = browserSync.reload;
+const destFolder = 'dist/';
 const pkg = require('./package.json');
 const devBuild = ((process.env.NODE_ENV || 'development')
    .trim().toLocaleLowerCase() !== 'production');
@@ -44,9 +45,18 @@ const html = {
    },
 };
 
+const syncOpts = {
+   'open': false,                   // Open project in a new tab?
+   'injectChanges': false,        // Auto inject changes instead of full reload.
+   'proxy': 'FendStarterKit.test', // Use http://_s.dev:3000 to use BrowserSync.
+   'watchOptions': {
+      'debounceDelay': 1000         // Wait 1 second before injecting.
+   },
+};
+
 const pleeeaseOpts = {
    'in': 'app/scss/style.scss',
-   'out': 'app/css/style.css',
+   'out': 'app/css/style.scss',
    'autoprefixer': {'browsers': ['last 2 versions', '> 2%']},
    'rem': ['18px'],
    'pseudoElements': true,
@@ -54,7 +64,7 @@ const pleeeaseOpts = {
    'minifier': !devBuild,
 };
 
-const destFolder = 'dist/';
+
 
 /**
  * Handle errors and alert the user.
@@ -101,7 +111,7 @@ gulp.task('styles', function(done) {
          extname: '.css',
       }))
       .pipe(gulp.dest(dist.css))
-      .pipe(browserSync.stream());
+      .pipe(browserSync.reload({stream: true}));
    done();
 });
 
@@ -145,7 +155,7 @@ gulp.task('concat', () =>
  *
  * https://www.npmjs.com/package/gulp-uglify
  */ // gulp.series('concat'),
-gulp.task('uglify', function(done) {
+gulp.task('scripts', function(done) {
    if (devBuild) {
       gulp.src(paths.js)
          .pipe(plumber({'errorHandler': handleErrors}))
@@ -183,6 +193,13 @@ gulp.task('js:lint', () =>
       .pipe(eslint.format())
       .pipe(eslint.failAfterError())
 );
+
+gulp.task('browser-sync', function() {
+   browserSync.init({
+      proxy: "yourlocal.dev"
+   });
+});
+
 /**
  * Process tasks and reload browsers on file changes.
  *
@@ -190,18 +207,19 @@ gulp.task('js:lint', () =>
  */
 gulp.task('watch', function() {
    // Run tasks when files change.
-   gulp.watch(html.in, gulp.series('html'));
-   gulp.watch(paths.css, gulp.series('styles'));
-   gulp.watch(paths.js, gulp.series('scripts'));
-   gulp.watch(paths.js, gulp.series('js:lint'));
+   // gulp.watch(html.in, gulp.series('html', browserSync.reload));
+   // gulp.watch(paths.css, gulp.series('styles'));
+   gulp.watch(paths.js, gulp.series('scripts', browserSync.reload));
+   //gulp.watch(paths.js, gulp.series('js:lint'));
 });
 
 /**
  * Create individual tasks.
  */
+gulp.task('browser-sync', gulp.series('browser-sync'));
 gulp.task('html', gulp.series('html'));
-gulp.task('scripts', gulp.series('uglify'));
+gulp.task('scripts', gulp.series('scripts'));
 gulp.task('styles', gulp.series('styles'));
 gulp.task('maps', gulp.series('maps'));
 gulp.task('lint', gulp.series('js:lint'));
-gulp.task('default', gulp.series('styles', 'scripts'));
+//gulp.task('default', gulp.series('html', 'styles', 'scripts'));
