@@ -6,6 +6,7 @@ const del = require('del');
 const eslint = require('gulp-eslint');
 const gulp = require('gulp');
 const gutil = require('gulp-util');
+const jasmineBrowser = require('gulp-jasmine-browser');
 const notify = require('gulp-notify');
 const pleeease = require('gulp-pleeease');
 const plumber = require('gulp-plumber');
@@ -197,18 +198,11 @@ gulp.task('js:lint', () =>
       .pipe(eslint.failAfterError())
 );
 
-gulp.task('browser-sync', function() {
-   browserSync.init({
-      proxy: "yourlocal.dev"
-   });
-});
-
 /**
  * Process tasks and reload browsers on file changes.
  *
  * https://www.npmjs.com/package/browser-sync
  */
-
 gulp.task('watch', function() {
    browserSync.init({
       server: {
@@ -224,7 +218,12 @@ gulp.task('watch', function() {
    gulp.watch(html.in, gulp.series('html', browserSync.reload));
    gulp.watch(paths.css, gulp.series('styles'));
    gulp.watch(paths.js, gulp.series('scripts', browserSync.reload));
-   //gulp.watch(paths.js, gulp.series('js:lint'));
+});
+
+gulp.task('tests', function() {
+   return gulp.src('tests/spec/extraSpec.js')
+      .pipe(jasmineBrowser.specRunner({console: true}))
+      .pipe(jasmineBrowser.headless({driver: 'chrome'}));
 });
 
 /**

@@ -32,6 +32,7 @@
       "gulp-eslint": "~4",
       "gulp-html5-lint": "^1.1.0",
       "gulp-jasmine": "^4.0.0",
+      "gulp-jasmine-browser": "^4.0.0",
       "gulp-notify": "~3",
       "gulp-pleeease": "^2.0.2",
       "gulp-plumber": "~1",
@@ -44,7 +45,9 @@
       "gulp-strip-debug": "^3.0.0",
       "gulp-uglify": "~3",
       "gulp-util": "~3",
+      "jasmine-core": "^3.1.0",
       "postcss-sorting": "^3.1.0",
+      "puppeteer": "^1.5.0",
       "sassdoc": "^2.5.0"
    },
    "dependencies": {
